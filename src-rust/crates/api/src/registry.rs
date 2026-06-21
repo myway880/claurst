@@ -142,6 +142,11 @@ pub fn provider_from_config(
     let api_key = config.resolve_provider_api_key(provider_id);
     let api_base = resolve_provider_api_base(config, provider_id).filter(|base| !base.is_empty());
 
+    // Resolve per-provider timeout (provider-specific value wins over global default)
+    let request_timeout = provider_cfg
+        .map(|p| p.resolved_request_timeout(config.default_request_timeout_seconds))
+        .unwrap_or_else(|| std::time::Duration::from_secs(config.default_request_timeout_seconds));
+
     use crate::providers;
 
     match provider_id {
@@ -154,6 +159,7 @@ pub fn provider_from_config(
             if let Some(base) = api_base {
                 provider = provider.with_base_url(base);
             }
+            provider = provider.with_request_timeout(request_timeout);
             Some(Arc::new(provider))
         }
         "google" => api_key.map(|key| Arc::new(GoogleProvider::new(key)) as Arc<dyn LlmProvider>),
@@ -184,6 +190,7 @@ pub fn provider_from_config(
             if let Some(base) = api_base {
                 provider = provider.with_base_url(base);
             }
+            provider = provider.with_request_timeout(request_timeout);
             Some(Arc::new(provider))
         }
         "lmstudio" | "lm-studio" => {
@@ -191,6 +198,7 @@ pub fn provider_from_config(
             if let Some(base) = api_base {
                 provider = provider.with_base_url(base);
             }
+            provider = provider.with_request_timeout(request_timeout);
             Some(Arc::new(provider))
         }
         "llamacpp" | "llama-cpp" | "llama-server" => {
@@ -198,6 +206,7 @@ pub fn provider_from_config(
             if let Some(base) = api_base {
                 provider = provider.with_base_url(base);
             }
+            provider = provider.with_request_timeout(request_timeout);
             Some(Arc::new(provider))
         }
         "deepseek" => {
@@ -208,6 +217,7 @@ pub fn provider_from_config(
             if let Some(base) = api_base {
                 provider = provider.with_base_url(base);
             }
+            provider = provider.with_request_timeout(request_timeout);
             Some(Arc::new(provider))
         }
         "groq" => {
@@ -218,6 +228,7 @@ pub fn provider_from_config(
             if let Some(base) = api_base {
                 provider = provider.with_base_url(base);
             }
+            provider = provider.with_request_timeout(request_timeout);
             Some(Arc::new(provider))
         }
         "xai" => {
@@ -228,6 +239,7 @@ pub fn provider_from_config(
             if let Some(base) = api_base {
                 provider = provider.with_base_url(base);
             }
+            provider = provider.with_request_timeout(request_timeout);
             Some(Arc::new(provider))
         }
         "openrouter" => {
@@ -238,6 +250,7 @@ pub fn provider_from_config(
             if let Some(base) = api_base {
                 provider = provider.with_base_url(base);
             }
+            provider = provider.with_request_timeout(request_timeout);
             Some(Arc::new(provider))
         }
         "cohere" => api_key.map(|key| Arc::new(CohereProvider::new(key)) as Arc<dyn LlmProvider>),

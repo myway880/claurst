@@ -157,6 +157,16 @@ impl OpenAiCompatProvider {
         self
     }
 
+    /// Override the request timeout for this provider.
+    /// Use higher values for slow local models (e.g. large CPU-bound LLMs).
+    pub fn with_request_timeout(mut self, timeout: std::time::Duration) -> Self {
+        self.http_client = reqwest::Client::builder()
+            .timeout(timeout)
+            .build()
+            .expect("failed to build reqwest client");
+        self
+    }
+
     // -----------------------------------------------------------------------
     // Internal helpers
     // -----------------------------------------------------------------------

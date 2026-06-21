@@ -651,6 +651,10 @@ pub mod config {
         100  // 100 KB
     }
 
+    fn default_request_timeout() -> u64 {
+        600
+    }
+
     /// Definition of a named agent with per-agent model, permissions,
     /// temperature, and system prompt.
     pub fn api_key_env_vars_for_provider(provider_id: &str) -> &'static [&'static str] {
@@ -888,6 +892,11 @@ pub mod config {
         pub api_key: Option<String>,
         /// Override the default base URL for this provider
         pub api_base: Option<String>,
+        /// Per-provider request timeout override (in seconds).
+        /// Falls back to `Config.default_request_timeout_seconds` (default 600).
+        /// Use higher values (e.g. 1800–3600) for large local models on CPU.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub request_timeout_seconds: Option<u64>,
         /// Whether this provider is enabled (default: true)
         #[serde(default = "default_true")]
         pub enabled: bool,
@@ -907,11 +916,20 @@ pub mod config {
             Self {
                 api_key: None,
                 api_base: None,
+                request_timeout_seconds: None,
                 enabled: true,
                 models_whitelist: Vec::new(),
                 models_blacklist: Vec::new(),
                 options: HashMap::new(),
             }
+        }
+    }
+
+    impl ProviderConfig {
+        /// Returns the effective request timeout Duration for this provider.
+        /// Falls back to the global default if not set on the provider.
+        pub fn resolved_request_timeout(&self, global_default: u64) -> std::time::Duration {
+            std::time::Duration::from_secs(self.request_timeout_seconds.unwrap_or(global_default))
         }
     }
 
@@ -953,6 +971,10 @@ pub mod config {
         /// Active provider ID (default: "anthropic")
         #[serde(default)]
         pub provider: Option<String>,
+        /// Global default request timeout in seconds.
+        /// Used when a provider does not specify its own `request_timeout_seconds`.
+        #[serde(default = "default_request_timeout")]
+        pub default_request_timeout_seconds: u64,
         /// Per-provider configurations
         #[serde(default)]
         pub provider_configs: HashMap<String, ProviderConfig>,
